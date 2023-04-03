@@ -1,4 +1,6 @@
 
+import 'package:eduease/layout/on_bord.dart';
+import 'package:eduease/layout/update_profile.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -13,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Edu Ease',
-      home: const MyHomePage(),
+      home: const OnBord(),
     );
   }
 }
@@ -44,24 +46,34 @@ class MyHomePage extends StatelessWidget {
                  // Scaffold.of(_scaffoldKey.currentContext!).openDrawer();
                   _scaffoldKey.currentState?.openDrawer();
                 },icon: Icon(Icons.menu)),
-                Spacer(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text("name",style: TextStyle(fontSize: 20),),
-                    SizedBox(height: 5,),
-                    Text("email"),
-                    SizedBox(height: 5,),
-                    Text("طالب"),
-                  ],
+                Expanded(
+                  child: InkWell(
+                    onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (context)=>UpdateProfile())),
+                    child: Row(
+                      children: [
+                        Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text("name",style: TextStyle(fontSize: 20),),
+                            SizedBox(height: 5,),
+                            Text("email"),
+                            SizedBox(height: 5,),
+                            Text("طالب"),
+                          ],
+                        ),
+                        SizedBox(width: 10,),
+                        Card(elevation: 2,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                            child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: SizedBox(width: 40,child: Image.network("https:\/\/avatars.dicebear.com\/api\/identicon\/816768506.png?")),
+                        ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                SizedBox(width: 10,),
-                Card(elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-                    child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SizedBox(width: 40,child: Image.network("https:\/\/avatars.dicebear.com\/api\/identicon\/816768506.png?")),
-                )),
                 SizedBox(width: 5,),
               ],
             ),
