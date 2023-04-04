@@ -37,6 +37,12 @@ dependencies:
   cupertino_icons: ^1.0.2
   material_design_icons_flutter:
   lottie:
+  firebase_auth:
+  firebase_core:
+  shared_preferences:
+  fluttertoast:
+  firebase_database:
+  pinput:
 
 dev_dependencies:
   flutter_test:
