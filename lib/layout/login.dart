@@ -1,13 +1,16 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:eduease/utils/cache.dart';
 import 'package:eduease/utils/const.dart';
+import 'package:flutter/services.dart';
 import 'package:pinput/pinput.dart';
 
 import '../main.dart';
+import 'HomePage.dart';
 
 bool is_loading = false;
 var a = 100;
@@ -15,7 +18,8 @@ TextEditingController name_con = TextEditingController();
 TextEditingController number_con = TextEditingController();
 var pinputController = TextEditingController();
 bool is_login = true;
-
+bool is_student =true;
+var rnd = Random().nextInt(999999999);
 class Login extends StatefulWidget {
   const Login({Key? key, required this.is_login}) : super(key: key);
   final bool is_login;
@@ -50,7 +54,8 @@ class _LoginState extends State<Login> {
                 child: Container(
                   width: 150,
                   height: 150,
-                  color: Colors.orange,
+                  color: Colors.white,
+                  child: Image.network("https://avatars.dicebear.com/api/identicon/$rnd.png"),
                 )),
             Spacer(),
             if (cache.get_data("otp_id") != null)
@@ -91,10 +96,10 @@ class _LoginState extends State<Login> {
                             });
                             if (cache.get_data("is_login")) {
                               cache.save_data("number", cache.get_data("reg").toString().split("|")[0]);
-                              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage()), (route) => false);
                               cache.remove_data("otp_id");
-                              cache.remove_data("req");
                               cache.remove_data("is_login");
+                              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage()), (route) => false);
+                              cache.remove_data("req");
                               // FirebaseMessaging.instance.getToken().then((value) {
                               //   print(cache.get_data("num"));
                               //   print(cache.get_data("num"));
@@ -106,21 +111,22 @@ class _LoginState extends State<Login> {
                               var a = await FirebaseDatabase.instance.ref().ref.child("Edudy").child("users").ref;
                               DatabaseReference newPostRef = a.push();
                               newPostRef.set({
-                                "name": cache.get_data("reg").toString().split("|")[1],
-                                "number": cache.get_data("reg").toString().split("|")[0],
-                                "type":"",
-                                "Dst":[],
-                                "Rdate":"",
-                                "group":"[[],[]]",
-                                "image":"",
-                                "location":"",
-                                "school":'["__________"],"[__________]"]',
-                                "subject":"_________",
+                                "name": json.encode(cache.get_data("reg").toString().split("|")[1]),
+                                "number": json.encode(cache.get_data("reg").toString().split("|")[0]),
+                                "type": is_student ? '"طالب"' : '"معلم"',
+                                "Dst": "[]",
+                                "Rdate": json.encode(DateTime.now().year.toString()+"/"+DateTime.now().month.toString()+"/"+DateTime.now().day.toString()),
+                                "group": "[[],[]]",
+                                "image": '"https://avatars.dicebear.com/api/identicon/$rnd.png"',
+                                "location": "",
+                                "school": '["_________","_________"]',
+                                "subject": "_________",
                               }).then((value) {
-                                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage()), (route) => false);
+                                cache.save_data("number", cache.get_data("reg").toString().split("|")[0]);
                                 cache.remove_data("otp_id");
-                                cache.remove_data("req");
                                 cache.remove_data("is_login");
+                                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage()), (route) => false);
+                                cache.remove_data("req");
                               });
                               // FirebaseMessaging.instance.getToken().then((value) {
                               //   cache.remove_data("otp_id");
@@ -188,7 +194,10 @@ class _LoginState extends State<Login> {
                           child: Text(" الاسم الكامل", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textDirection: TextDirection.rtl),
                           width: double.infinity,
                         ),
-                      if (!is_login) TextFormField(controller: name_con),
+                      if (!is_login) Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: TextFormField(controller: name_con,textDirection: TextDirection.rtl,),
+                      ),
                       if (!is_login)
                         SizedBox(
                           height: 15,
@@ -197,20 +206,30 @@ class _LoginState extends State<Login> {
                         child: Text(" الرقم", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textDirection: TextDirection.rtl),
                         width: double.infinity,
                       ),
-                      TextFormField(
-                        controller: number_con,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          children: [
+                            Text("+964",style: TextStyle(fontSize: 20),),
+                            Expanded(child: TextFormField(style: TextStyle(fontSize: 20),controller: number_con,keyboardType: TextInputType.phone,inputFormatters: [FilteringTextInputFormatter.digitsOnly,LengthLimitingTextInputFormatter(10)],)),
+                          ],
+                        ),
                       ),
                       if (!is_login)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text("معلم"),
-                            Checkbox(value: false, onChanged: (value) {}),
+                            Checkbox(value: (is_student) ?false:true, onChanged: (value) {setState(() {
+                              is_student = false;
+                            });}),
                             SizedBox(
                               width: 100,
                             ),
                             Text("طالب"),
-                            Checkbox(value: false, onChanged: (value) {}),
+                            Checkbox(value: is_student, onChanged: (value){setState(() {
+                              is_student = true;
+                            });}),
                           ],
                         ),
                       if (is_loading)
@@ -231,11 +250,12 @@ class _LoginState extends State<Login> {
                               onTap: () async {
                                 //   if("a"=="b"){
                                 if (await check_is_here(number_con.text) && is_login || !is_login && !await check_is_here(number_con.text)) {
-                                  print("okkkk");
+                                  if(number_con.length==10&& is_login||name_con.length!=0&&number_con.length==10&& !is_login){
                                   if (is_login) {
-                                    cache.save_data("num", "+964" + number_con.text);
+                                    cache.save_data("reg", "${"+964" + number_con.text}|a");
                                     cache.save_data("is_login", true);
-                                  } else {
+                                  }
+                                  else {
                                     cache.save_data("reg", "${"+964" + number_con.text}|${name_con.text}");
                                     cache.save_data("is_login", false);
                                   }
@@ -248,10 +268,11 @@ class _LoginState extends State<Login> {
                                       await FirebaseAuth.instance.signInWithCredential(credential).then((value) async {
                                         if (cache.get_data("is_login")) {
                                           cache.save_data("number", cache.get_data("reg").toString().split("|")[0]);
-                                          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage()), (route) => false);
                                           cache.remove_data("otp_id");
-                                          cache.remove_data("req");
                                           cache.remove_data("is_login");
+
+                                          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage()), (route) => false);
+                                          cache.remove_data("req");
                                           // FirebaseMessaging.instance.getToken().then((value) {
                                           //   print(cache.get_data("num"));
                                           //   print(cache.get_data("num"));
@@ -266,10 +287,11 @@ class _LoginState extends State<Login> {
                                             "name": cache.get_data("reg").toString().split("|")[1],
                                             "number": cache.get_data("reg").toString().split("|")[0]
                                           }).then((value) {
-                                            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage()), (route) => false);
+                                            cache.save_data("number", cache.get_data("reg").toString().split("|")[0]);
                                             cache.remove_data("otp_id");
-                                            cache.remove_data("req");
                                             cache.remove_data("is_login");
+                                            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyHomePage()), (route) => false);
+                                            cache.remove_data("req");
                                           });
                                           // FirebaseMessaging.instance.getToken().then((value) {
                                           //   cache.remove_data("otp_id");
@@ -303,12 +325,21 @@ class _LoginState extends State<Login> {
                                       print("4");
                                       print(verificationId);
                                       cache.save_data("otp_id", verificationId);
-                                      Tost("تمت إعادة إرسال رمز التفعيل", Colors.grey);
+                                     // Tost("تمت إعادة إرسال رمز التفعيل", Colors.grey);
                                     },
                                   );
                                   setState(() {
                                     is_loading = true;
-                                  });
+                                  });}else{
+                                    if(number_con.length!=10){
+                                      Tost("يرجى كتابة رقم هاتف صالح", Colors.red);
+                                    }
+                                    else if(name_con.length==0){
+                                      Tost("يرجى كتابة اسم", Colors.red);
+                                    }else{
+                                      Tost("حدث خطأ", Colors.red);
+                                    }
+                                  }
                                 } else {
                                   if (is_login) {
                                     Tost("الرقم غير موجود", Colors.red);
@@ -354,8 +385,9 @@ class _LoginState extends State<Login> {
                     ],
                   )),
             if (MediaQuery.of(context).viewInsets.bottom != 0)
-              SizedBox(
+              Container(
                 height: 200,
+                color: Colors.white,
               )
           ]),
         ),
@@ -366,7 +398,7 @@ class _LoginState extends State<Login> {
   check_is_here(name) async {
     DataSnapshot a = await FirebaseDatabase.instance.ref().ref.child("Edudy").child("users").get();
     for (var element in a.children) {
-      if ((element.value as Map)["number"] == '+964$name') {
+      if ((element.value as Map)["number"] == '"+964$name"') {
         return true;
       }
     }

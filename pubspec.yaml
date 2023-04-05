@@ -43,6 +43,8 @@ dependencies:
   fluttertoast:
   firebase_database:
   pinput:
+  bloc:
+  flutter_bloc:
 
 dev_dependencies:
   flutter_test:
